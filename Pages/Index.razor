@@ -115,13 +115,13 @@
         if (roll <= numsAfterDot) result++;
         if (result > 1000) result = 1000;
         _currentAmountOfMistakes = result;
-        GeneratePersons(INIT_PERSONS_AMOUNT);
+        _personsPrint = (_currentAmountOfMistakes > 0) ? _mistakesEmulatorService.CorruptData(_persons, _currentAmountOfMistakes, _currentRegion) : _persons.Select(p => (PersonModel)p.Clone()).ToList();
     }
 
     private void GeneratePersons(int amountOfPersons)
     {
-        _persons = _personGeneratorService.GeneratePersons(_currentSeed, _currentRegion, amountOfPersons, _currentAmountOfMistakes);
-        _personsPrint = (_currentAmountOfMistakes > 0) ? _mistakesEmulatorService.CorruptData(_persons, _currentAmountOfMistakes, _currentRegion) : _persons;
+        _persons = _personGeneratorService.GeneratePersons(_currentSeed, _currentRegion, amountOfPersons);
+        _personsPrint = _persons.Select(p => (PersonModel)p.Clone()).ToList();
     }
 
     private void SeedIsChangedEventHandler(string input)
