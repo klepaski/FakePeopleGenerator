@@ -1,4 +1,4 @@
-﻿using Bogus;
+using Bogus;
 using task5.Models;
 using CsvHelper;
 using System.Globalization;
@@ -20,7 +20,7 @@ namespace task5.Services
 
         private const int MAX_SWITCH_PROBABILITY = 800;
         private const int MAX_DELETE_PROBABILITY = 850;
-        private const int MAX_ADD_PROBABILITY = 850;
+        private const int MAX_ADD_PROBABILITY = 999;
         private int _currentSwitchProbability = MAX_SWITCH_PROBABILITY;
         private int _currentDeleteProbability = MAX_SWITCH_PROBABILITY;
         private int _currentAddProbability = MAX_SWITCH_PROBABILITY;
@@ -29,19 +29,18 @@ namespace task5.Services
         {
             _currentAmountOfMistakes = amountOfMistakes;
             _currentRegion = region;
-            List<PersonModel> resultPersons = new();
-            foreach (PersonModel person in persons)
+            List<PersonModel> resultPersons = persons.Select(p => (PersonModel)p.Clone()).ToList();
+            foreach (PersonModel p in resultPersons)
             {
                 for (int i = 0; i < _currentAmountOfMistakes; i++)
                 {
-                    switch (_faker.Random.Int(1, 3))
+                    switch (_faker.Random.Int(0, 2))
                     {
-                        case 1: person.Name = AddMistakeToPersonData(person.Name); _currentFieldToModify = "Name";  break;
-                        case 2: person.Address = AddMistakeToPersonData(person.Address); _currentFieldToModify = "Address"; break;
-                        case 3: person.Phone = AddMistakeToPersonData(person.Phone); _currentFieldToModify = "Phone"; break;
+                        case 0: p.Name = AddMistakeToPersonData(p.Name); _currentFieldToModify = "Name";  break;
+                        case 1: p.Address = AddMistakeToPersonData(p.Address); _currentFieldToModify = "Address"; break;
+                        case 2: p.Phone = AddMistakeToPersonData(p.Phone); _currentFieldToModify = "Phone"; break;
                     }
                 }
-                resultPersons.Add(person);
             }
             _currentSwitchProbability = MAX_SWITCH_PROBABILITY;
             _currentDeleteProbability = MAX_DELETE_PROBABILITY;
@@ -64,6 +63,7 @@ namespace task5.Services
 
         private string MakeDeletedCharMistake(string data)
         {
+            if (data.Length < 2) return data;
             if (_currentDeleteProbability > _currentSwitchProbability + 1) _currentDeleteProbability--;
             int indexToDelete = _faker.Random.Int(0, data.Length - 1);
             data = data.Remove(indexToDelete, 1);
@@ -74,7 +74,7 @@ namespace task5.Services
         {
             if (_currentDeleteProbability < _currentAddProbability - 1) _currentDeleteProbability++;
             int indexToAdd = _faker.Random.Int(0, data.Length - 1);
-            string characterToAdd = GenerateAlphaNumeric();
+            string characterToAdd = _faker.Random.AlphaNumeric(1);
             data = data.Insert(indexToAdd, characterToAdd);
             return data;
         }
@@ -87,19 +87,6 @@ namespace task5.Services
             string switchedPart = String.Join("", data[secondIndex], data[firstIndex]);
             data = data.Remove(firstIndex, 2).Insert(firstIndex, switchedPart);
             return data;
-        }
-
-        private string GenerateAlphaNumeric()
-        {
-            string chars = _currentRegion switch
-            {
-                Region.en => "abcdefghijklmnopqrstuvwxyz",
-                Region.ru => "абвгдежзийклмнопрстуфхцчшщъыьэюя",
-                Region.ko => "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣㄲㄸㅃㅉㅆㅢㅚㅐㅟㅔㅒㅖㅘㅝㅙㅞ",
-            };
-            if (_currentFieldToModify == "Phone") chars = "0123456789";
-            int charIndex = _faker.Random.Int(0, chars.Length - 1);
-            return chars[charIndex].ToString();
         }
     }
 }
