@@ -1,4 +1,4 @@
-﻿using Bogus;
+using Bogus;
 using task5.Models;
 using CsvHelper;
 using System.Globalization;
@@ -32,14 +32,6 @@ namespace task5.Services
         private const int BUILDING_NUMBER_MIN = 1, BUILDING_NUMBER_MAX = 150;
         private const int APARTMENT_NUMBER_MIN = 1, APARTMENT_NUMBER_MAX = 255;
 
-        private const int MAX_SWITCH_PROBABILITY = 800;
-        private const int MAX_DELETE_PROBABILITY = 850;
-        private const int MAX_ADD_PROBABILITY = 999;
-
-        private int _currentSwitchProbability = MAX_SWITCH_PROBABILITY;
-        private int _currentDeleteProbability = MAX_SWITCH_PROBABILITY;
-        private int _currentAddProbability = MAX_SWITCH_PROBABILITY;
-
         public PersonModel GeneratePerson(int seed, Region region)
         {
             Randomizer.Seed = new Random(seed);
@@ -64,67 +56,9 @@ namespace task5.Services
             for (int i = 0; i < amountOfPersons; i++)
             {
                 PersonModel person = GeneratePerson(seed, region);
-                if (_currentAmountOfMistakes > 0)
-                    CorruptData(person);
                 _currentListOfPersons.Add(person);
             }
             return _currentListOfPersons;
-        }
-
-        private void CorruptData(PersonModel person)
-        {
-            for (int i = 0; i < _currentAmountOfMistakes; i++)
-            {
-                switch (_faker.Random.Int(0, 3))
-                {
-                    case 0: person.Id = AddMistakeToPersonData(person.Id); break;
-                    case 1: person.Name = AddMistakeToPersonData(person.Name); break;
-                    case 2: person.Address = AddMistakeToPersonData(person.Address); break;
-                    case 3: person.Phone = AddMistakeToPersonData(person.Phone); break;
-                }
-            }
-            _currentSwitchProbability = MAX_SWITCH_PROBABILITY;
-            _currentDeleteProbability = MAX_DELETE_PROBABILITY;
-            _currentAddProbability = MAX_ADD_PROBABILITY;
-        }
-
-        private string AddMistakeToPersonData(string dataToModify)
-        {
-            int rolledNum = _faker.Random.Int(1, MAX_ADD_PROBABILITY);
-            int mistakeNumber = (rolledNum <= _currentSwitchProbability) ? 0 : (rolledNum <= _currentDeleteProbability) ? 1 : 2;
-            return (mistakeNumber switch
-            {
-                0 => MakeSwitchedCharsMistake(dataToModify),
-                1 => MakeDeletedCharMistake(dataToModify),
-                2 => MakeAdditionalCharMistake(dataToModify),
-                _ => "",
-            });
-        }
-
-        private string MakeDeletedCharMistake(string data)
-        {
-            if (_currentDeleteProbability > _currentSwitchProbability + 1) _currentDeleteProbability--;
-            int indexToDelete = _faker.Random.Int(0, data.Length - 1);
-            data = data.Remove(indexToDelete, 1);
-            return data;
-        }
-
-        private string MakeAdditionalCharMistake(string data)
-        {
-            if (_currentDeleteProbability < _currentAddProbability - 1) _currentDeleteProbability++;
-            int indexToAdd = _faker.Random.Int(0, data.Length);
-            string characterToAdd = _faker.Random.AlphaNumeric(1);
-            data = data.Insert(indexToAdd, characterToAdd);
-            return data;
-        }
-
-        private string MakeSwitchedCharsMistake(string data)
-        {
-            int firstIndex = _faker.Random.Int(0, data.Length - 2);
-            int secondIndex = firstIndex + 1;
-            string switchedPart = String.Join("", data[secondIndex], data[firstIndex]);
-            data = data.Remove(firstIndex, 2).Insert(firstIndex, switchedPart);
-            return data;
         }
 
         private void ChangeFakerContext(Region region, int seed, int amountOfMistakes)
