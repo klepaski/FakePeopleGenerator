@@ -1,0 +1,161 @@
+﻿@page "/"
+
+@using System.Text.RegularExpressions;
+@using System.Globalization;
+
+@inject IJSRuntime JSRuntime;
+
+<PageTitle>Task 5</PageTitle>
+
+<div class="row">
+    <div class="col-4">
+        <img class="countryFlag" src="/en.svg" @onclick="@(()=>{SwitchRegion(Region.en);})" />
+        <img class="countryFlag" src="/ko.svg" @onclick="@(()=>{SwitchRegion(Region.ko);})" />
+        <img class="countryFlag" src="/ru.svg" @onclick="@(()=>{SwitchRegion(Region.ru);})" />
+    </div>
+    <div class="col-4 text-center">
+        <h1> @_currentRegionName </h1>
+    </div>
+</div>
+
+<div class="d-flex d-row align-items-center ">
+    <div class="col-4 input-group " style="width: 33%">
+        <input type="number" class="form-control" value="@_currentSeed" 
+            @oninput="@((ChangeEventArgs e) =>{SeedIsChangedEventHandler(e.Value.ToString());})" />
+        <button class="btn btn-secondary" @onclick="GenerateRandomSeed">@_randomSeedLabel</button>
+    </div>
+
+    <div class="col-4 px-4" style="width: 25%">
+        <label for="customRange3" class="form-label">@_mistakesLabel</label>
+        <input type="range" value="@_enteredAmountOfMistakes" class="form-range" min="0" max="10" step="0.25" id="customRange3" 
+            @onchange="@((ChangeEventArgs e) =>{MistakesCountIsChangedHandler(e.Value.ToString());})">
+    </div>
+
+    <div class="col-4 input-group" style="width: 13%">
+        <input value="@_enteredAmountOfMistakes" type="number" min="0" max="10000" step="0.25" class="form-control"
+               @oninput="@((ChangeEventArgs e) =>{MistakesCountIsChangedHandler(e.Value.ToString());})" />
+    </div>
+    
+</div>
+
+<div style="max-height: 440px; overflow: auto;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 3%;">№</th>
+                <th style="width: 26%;">ID</th>
+                <th style="width: 21%;">@_nameLabel</th>
+                <th style="width: 30%;">@_addressLabel</th>
+                <th style="width: 15%;">@_phoneLabel</th>
+            </tr>
+        </thead>
+        <InfiniteScroll ObserverTargetId="observerTarget" ObservableTargetReached="(e) => GeneratePersons(GENERATED_PERSONS_AMOUNT_PER_SCROLL)">
+            <tbody>
+    	        @foreach (var person in @_persons)
+                {
+                    <tr>
+                        <td>@person.Number</td>
+                        <td>@person.Id</td>
+                        <td>@person.Name</td>
+                        <td>@person.Address</td>
+                        <td>@person.Phone</td>
+                    </tr>
+		        }
+                <span id="observerTarget"></span>
+            </tbody>
+            </InfiniteScroll>
+        </table>
+</div>
+<div class="row ">
+    <div class="col-3 d-flex offset-9">
+        <button class="btn btn-success my-2 " @onclick="GetCsvFile">Export to csv</button>
+    </div>      
+</div>
+
+@code {
+
+    private List<PersonModel> _persons = new();
+    private PersonGeneratorService _personGeneratorService = new();
+    private string? _nameLabel, _addressLabel, _phoneLabel, _randomSeedLabel, _mistakesLabel;
+
+    private const int INIT_PERSONS_AMOUNT = 20;
+    private const int GENERATED_PERSONS_AMOUNT_PER_SCROLL = 5;
+    private const int DEFAULT_SEED = 0;
+    private const Region DEFAULT_REGION = Region.en;
+    private int _currentSeed { get; set; } = DEFAULT_SEED;
+    private Region _currentRegion { get; set; }
+    private string _currentRegionName { get; set; } = "";
+    private int _currentAmountOfMistakes { get; set; } = 0;
+    private string _enteredAmountOfMistakes { get; set; } = "0";
+
+    private void SwitchRegion(Region region)
+    {
+        if (_currentRegion == region) return;
+        _currentRegion = region;
+        switch (_currentRegion)
+        {
+            case Region.en: _currentRegionName = "USA"; _nameLabel = "Name"; _addressLabel = "Address"; _phoneLabel = "Phone"; _randomSeedLabel = "Random Seed"; _mistakesLabel = "Amount of mistakes"; break;
+            case Region.ru: _currentRegionName = "РОССИЯ"; _nameLabel = "Имя"; _addressLabel = "Адрес"; _phoneLabel = "Телефон";  _randomSeedLabel = "Случайный сид"; _mistakesLabel = "Количество ошибок"; break;
+            case Region.ko: _currentRegionName = "한국"; _nameLabel = "이름"; _addressLabel = "주소"; _phoneLabel = "전화 번호"; _randomSeedLabel = "랜덤 시드"; _mistakesLabel = "실수의 수"; break;
+        };
+        GeneratePersons(INIT_PERSONS_AMOUNT);
+    }
+
+    private void MistakesCountIsChangedHandler(string input)
+    {
+        _enteredAmountOfMistakes = input;
+        var inputInDouble = Double.Parse(input, CultureInfo.InvariantCulture);
+        int result = (int)inputInDouble;
+        double numsAfterDot = inputInDouble % 1;
+        double roll = new Random(_currentSeed).NextDouble();
+        if (roll <= numsAfterDot) result++;
+        if (result > 1000) result = 1000;
+        _currentAmountOfMistakes = result;
+        GeneratePersons(INIT_PERSONS_AMOUNT);
+    }
+
+    private void SeedIsChangedEventHandler(string input)
+    {
+        if (input.Length < 1)
+        {
+            _currentSeed = DEFAULT_SEED;
+            GeneratePersons(INIT_PERSONS_AMOUNT);
+            return;
+        }
+        input = input.Length > 9 ? input.Substring(0, 9) : input;
+        long parsedInput = Int64.Parse(input);
+        if (!(parsedInput < Int32.MaxValue && parsedInput > Int32.MinValue))
+            return;
+        int parsedInt = (int)parsedInput;
+        if (_currentSeed == parsedInt)
+            return;
+        _currentSeed = parsedInt;
+        GeneratePersons(INIT_PERSONS_AMOUNT);
+    }
+
+    private void GenerateRandomSeed()
+    {
+        Random random = new();
+        _currentSeed = random.Next(0, Int32.MaxValue);
+        GeneratePersons(INIT_PERSONS_AMOUNT);
+    }
+
+    private void GeneratePersons(int amountOfPersons)
+    {
+        _persons = _personGeneratorService.GeneratePersons(_currentSeed, _currentRegion, amountOfPersons, _currentAmountOfMistakes);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SwitchRegion(DEFAULT_REGION);
+    }
+
+    private async void GetCsvFile()
+    {
+        MemoryStream csvStream = _personGeneratorService.GetPersonsInCsvFile();
+        var streamRef = new DotNetStreamReference(csvStream);
+        await JSRuntime.InvokeVoidAsync("downloadFileFromStream", "Persons.csv", streamRef);
+        csvStream.Close();
+    }
+}
+
