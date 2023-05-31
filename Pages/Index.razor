@@ -1,7 +1,8 @@
-﻿@page "/"
+@page "/"
 
 @using System.Text.RegularExpressions;
 @using System.Globalization;
+@using Bogus;
 
 @inject IJSRuntime JSRuntime;
 
@@ -51,7 +52,7 @@
         </thead>
         <InfiniteScroll ObserverTargetId="observerTarget" ObservableTargetReached="(e) => GeneratePersons(GENERATED_PERSONS_AMOUNT_PER_SCROLL)">
             <tbody>
-    	        @foreach (var person in @_persons)
+                @foreach (var person in @_personsPrint)
                 {
                     <tr>
                         <td>@person.Number</td>
@@ -75,7 +76,10 @@
 @code {
 
     private List<PersonModel> _persons = new();
+    private List<PersonModel> _personsPrint = new();
+
     private PersonGeneratorService _personGeneratorService = new();
+    private MistakesEmulatorService _mistakesEmulatorService = new();
     private string? _nameLabel, _addressLabel, _phoneLabel, _randomSeedLabel, _mistakesLabel;
 
     private const int INIT_PERSONS_AMOUNT = 20;
@@ -114,6 +118,12 @@
         GeneratePersons(INIT_PERSONS_AMOUNT);
     }
 
+    private void GeneratePersons(int amountOfPersons)
+    {
+        _persons = _personGeneratorService.GeneratePersons(_currentSeed, _currentRegion, amountOfPersons, _currentAmountOfMistakes);
+        _personsPrint = (_currentAmountOfMistakes > 0) ? _mistakesEmulatorService.CorruptData(_persons, _currentAmountOfMistakes, _currentRegion) : _persons;
+    }
+
     private void SeedIsChangedEventHandler(string input)
     {
         if (input.Length < 1)
@@ -124,11 +134,9 @@
         }
         input = input.Length > 9 ? input.Substring(0, 9) : input;
         long parsedInput = Int64.Parse(input);
-        if (!(parsedInput < Int32.MaxValue && parsedInput > Int32.MinValue))
-            return;
+        if (!(parsedInput < Int32.MaxValue && parsedInput > Int32.MinValue)) return;
         int parsedInt = (int)parsedInput;
-        if (_currentSeed == parsedInt)
-            return;
+        if (_currentSeed == parsedInt) return;
         _currentSeed = parsedInt;
         GeneratePersons(INIT_PERSONS_AMOUNT);
     }
@@ -138,11 +146,6 @@
         Random random = new();
         _currentSeed = random.Next(0, Int32.MaxValue);
         GeneratePersons(INIT_PERSONS_AMOUNT);
-    }
-
-    private void GeneratePersons(int amountOfPersons)
-    {
-        _persons = _personGeneratorService.GeneratePersons(_currentSeed, _currentRegion, amountOfPersons, _currentAmountOfMistakes);
     }
 
     protected override async Task OnInitializedAsync()
@@ -158,4 +161,3 @@
         csvStream.Close();
     }
 }
-
