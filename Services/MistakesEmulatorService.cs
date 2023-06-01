@@ -8,16 +8,13 @@ namespace task5.Services
 {
     public interface IMistakesEmulatorService
     {
-        public List<PersonModel> CorruptData(List<PersonModel> persons, int amountOfMistakes, Region region);
+        public List<PersonModel> CorruptData(List<PersonModel> persons, int amountOfMistakes, int seed);
     }
 
     public class MistakesEmulatorService : IMistakesEmulatorService
     {
         private int _currentAmountOfMistakes { get; set; } = 0;
-        private Region _currentRegion { get; set; }
-        private string _currentFieldToModify = "";
         private Faker _faker = new();
-
         private const int MAX_SWITCH_PROBABILITY = 800;
         private const int MAX_DELETE_PROBABILITY = 850;
         private const int MAX_ADD_PROBABILITY = 999;
@@ -25,10 +22,10 @@ namespace task5.Services
         private int _currentDeleteProbability = MAX_SWITCH_PROBABILITY;
         private int _currentAddProbability = MAX_SWITCH_PROBABILITY;
 
-        public List<PersonModel> CorruptData(List<PersonModel> persons, int amountOfMistakes, Region region)
+        public List<PersonModel> CorruptData(List<PersonModel> persons, int amountOfMistakes, int seed)
         {
             _currentAmountOfMistakes = amountOfMistakes;
-            _currentRegion = region;
+            _faker.Random = new Randomizer(seed);
             List<PersonModel> resultPersons = persons.Select(p => (PersonModel)p.Clone()).ToList();
             foreach (PersonModel p in resultPersons)
             {
@@ -36,9 +33,9 @@ namespace task5.Services
                 {
                     switch (_faker.Random.Int(0, 2))
                     {
-                        case 0: p.Name = AddMistakeToPersonData(p.Name); _currentFieldToModify = "Name";  break;
-                        case 1: p.Address = AddMistakeToPersonData(p.Address); _currentFieldToModify = "Address"; break;
-                        case 2: p.Phone = AddMistakeToPersonData(p.Phone); _currentFieldToModify = "Phone"; break;
+                        case 0: p.Name = AddMistakeToPersonData(p.Name); break;
+                        case 1: p.Address = AddMistakeToPersonData(p.Address); break;
+                        case 2: p.Phone = AddMistakeToPersonData(p.Phone); break;
                     }
                 }
             }
