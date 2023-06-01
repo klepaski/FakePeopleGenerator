@@ -77,7 +77,6 @@
 
     private List<PersonModel> _persons = new();
     private List<PersonModel> _personsPrint = new();
-
     private PersonGeneratorService _personGeneratorService = new();
     private MistakesEmulatorService _mistakesEmulatorService = new();
     private string? _nameLabel, _addressLabel, _phoneLabel, _randomSeedLabel, _mistakesLabel;
@@ -115,7 +114,7 @@
         if (roll <= numsAfterDot) result++;
         if (result > 1000) result = 1000;
         _currentAmountOfMistakes = result;
-        _personsPrint = (_currentAmountOfMistakes > 0) ? _mistakesEmulatorService.CorruptData(_persons, _currentAmountOfMistakes, _currentRegion) : _persons.Select(p => (PersonModel)p.Clone()).ToList();
+        _personsPrint = (_currentAmountOfMistakes > 0) ? _mistakesEmulatorService.CorruptData(_persons, _currentAmountOfMistakes, _currentSeed) : _persons.Select(p => (PersonModel)p.Clone()).ToList();
     }
 
     private void GeneratePersons(int amountOfPersons)
