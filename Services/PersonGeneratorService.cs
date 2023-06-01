@@ -14,7 +14,7 @@ namespace task5.Services
     public interface IPersonGeneratorService
     {
         public PersonModel GeneratePerson(int seed, Region region);
-        public List<PersonModel> GeneratePersons(int seed, Region region, int amountOfPersons);//, int amountOfMistakes);
+        public List<PersonModel> GeneratePersons(int seed, Region region, int amountOfPersons);
         public MemoryStream GetPersonsInCsvFile();
     }
 
@@ -22,7 +22,6 @@ namespace task5.Services
     {
         private Faker _faker = new();
         private int _currentSeed;
-        //private int _currentAmountOfMistakes;
         private List<PersonModel> _currentListOfPersons = new();
 
         private const string EN_CODE = "+1", RU_CODE = "+7", KO_CODE = "+82";
@@ -50,9 +49,9 @@ namespace task5.Services
             return person;
         }
 
-        public List<PersonModel> GeneratePersons(int seed, Region region, int amountOfPersons)//, int amountOfMistakes)
+        public List<PersonModel> GeneratePersons(int seed, Region region, int amountOfPersons)
         {
-            ChangeFakerContext(region, seed);//, amountOfMistakes);
+            ChangeFakerContext(region, seed);
             for (int i = 0; i < amountOfPersons; i++)
             {
                 PersonModel person = GeneratePerson(seed, region);
@@ -61,15 +60,14 @@ namespace task5.Services
             return _currentListOfPersons;
         }
 
-        private void ChangeFakerContext(Region region, int seed)//, int amountOfMistakes)
+        private void ChangeFakerContext(Region region, int seed)
         {
             var currentRegion = Enum.GetName(region.GetType(), region);
-            if (!_faker.Locale.Equals(currentRegion) || _currentSeed != seed)// || _currentAmountOfMistakes != amountOfMistakes)
+            if (!_faker.Locale.Equals(currentRegion) || _currentSeed != seed)
             {
                 _faker = new Faker(currentRegion);
                 _faker.IndexFaker += 2;
                 _currentSeed = seed;
-                //_currentAmountOfMistakes = amountOfMistakes;
                 _currentListOfPersons = new();
             }
         }
